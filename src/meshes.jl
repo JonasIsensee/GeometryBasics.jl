@@ -222,20 +222,25 @@ function volume(mesh::Mesh)
     return sum(volume, mesh)
 end
 
-function Base.merge(meshes::AbstractVector{<:Mesh})
+function Base.merge(meshes::AbstractVector{<:GeometryBasics.Mesh})
     return if isempty(meshes)
         error("No meshes to merge")
     elseif length(meshes) == 1
         return meshes[1]
     else
-        m1 = meshes[1]
-        ps = copy(coordinates(m1))
-        fs = copy(faces(m1))
+        ps = reduce(vcat, coordinates.(meshes))
+        fs = reduce(vcat, faces.(meshes))
+        idx = length(faces(meshes[1]))
+        offset = length(coordinates(meshes[1]))
         for mesh in Iterators.drop(meshes, 1)
-            append!(fs, map(f -> f .+ length(ps), faces(mesh)))
-            append!(ps, coordinates(mesh))
+            N = length(faces(mesh))
+            for i = idx .+ (1:N)
+                fs[i] = fs[i] .+ offset
+            end
+            idx += N
+            offset += length(coordinates(mesh))
         end
-        return Mesh(ps, fs)
+        return GeometryBasics.Mesh(ps, fs)
     end
 end
 
