@@ -231,14 +231,21 @@ function Base.merge(meshes::AbstractVector{<:Mesh})
         m1 = meshes[1]
         ps = copy(coordinates(m1))
         fs = copy(faces(m1))
+        sizehint!(ps, sum(length(coordinates(m)) for m in meshes))
+        sizehint!(fs, sum(length(faces(m)) for m in meshes))
+
         for mesh in Iterators.drop(meshes, 1)
-            append!(fs, map(f -> f .+ length(ps), faces(mesh)))
+            fsm = faces(mesh)
+            n = length(fs)
+            append!(fs, fsm)
+            for i = n+1:length(fs)
+                fs[i] = fs[i] .+ length(ps)
+            end
             append!(ps, coordinates(mesh))
         end
         return Mesh(ps, fs)
     end
 end
-
 """
     pointmeta(mesh::Mesh; meta_data...)
 
